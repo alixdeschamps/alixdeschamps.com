@@ -1,0 +1,77 @@
+---
+import { render, type CollectionEntry } from 'astro:content'
+import Base from '../../layouts/Base.astro'
+import { getProjects } from '../../lib/projects'
+import { colorClass, longDate } from '../../lib/colors'
+
+export async function getStaticPaths() {
+	const projects = await getProjects()
+	return projects.map((project, index) => ({
+		params: { slug: project.id },
+		props: {
+			project,
+			newer: index > 0 ? projects[index - 1] : null,
+			older: index < projects.length - 1 ? projects[index + 1] : null,
+		},
+	}))
+}
+
+type P = CollectionEntry<'projects'>
+const { project, newer, older } = Astro.props as { project: P; newer: P | null; older: P | null }
+const { title, description, date, thumbnail, thumbnailAlt, demoURL, repoURL } = project.data
+const { Content } = await render(project)
+---
+
+<Base title={title} description={description} bodyClass={colorClass(project.data.color)} project={project.id} color={project.data.color}>
+	<section id="content" class="article">
+		<header>
+			<a href="/projects/" class="category">Project</a>
+			<h1 class="entry-title">{title}</h1>
+			<p class="summary">{description}</p>
+		</header>
+
+		<div class="entry-content">
+			{
+				thumbnail && (
+					<>
+						<p class="img">
+							<img class="color" src={`/dithers/${project.id}.png`} alt={thumbnailAlt ?? ''} loading="lazy" />
+							<img class="mono" src={`/dithers/mono/${project.id}.png`} alt={thumbnailAlt ?? ''} loading="lazy" />
+						</p>
+					</>
+				)
+			}
+			<Content />
+			{
+				(demoURL || repoURL) && (
+					<p>
+						{demoURL && <a href={demoURL}>Demo</a>} {repoURL && <a href={repoURL}>Repository</a>}
+					</p>
+				)
+			}
+		</div>
+
+		<div class="post-info gray">
+			<time class="published" datetime={date.toISOString()}>{longDate(date)}</time>
+		</div>
+	</section>
+
+	<ul id="post-nav">
+		{
+			newer && (
+				<li class="newer">
+					<p class="gray">&larr; suivant</p>
+					<a href={`/projects/${newer.id}/`}>{newer.data.title}</a>
+				</li>
+			)
+		}
+		{
+			older && (
+				<li class="older">
+					<p class="gray">précédent &rarr;</p>
+					<a href={`/projects/${older.id}/`}>{older.data.title}</a>
+				</li>
+			)
+		}
+	</ul>
+</Base>

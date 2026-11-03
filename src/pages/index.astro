@@ -1,0 +1,52 @@
+---
+import Base from '../layouts/Base.astro'
+import Swatches from '../components/Swatches.astro'
+import { getHomeProjects } from '../lib/projects'
+import { colorClass, imgVars, monthYear } from '../lib/colors'
+
+const projects = await getHomeProjects()
+const [first, ...rest] = projects
+---
+
+<Base bodyClass="index1">
+	<section id="content">
+		{
+			first && (
+				<ul class={`cols cover ${colorClass(first.data.color)}`} data-project={first.id} data-color={first.data.color}>
+					<li>
+						<a href={`/projects/${first.id}/`} rel="bookmark">
+							<h2 class="entry-title">{first.data.title}</h2>
+						</a>
+						<a href="/projects/" class="category">Project</a>
+						<p class="index-summary">{first.data.description}</p>
+						<time class="published" datetime={first.data.date.toISOString()}>{monthYear(first.data.date)}</time>
+						<Swatches id={first.id} />
+					</li>
+					<li>
+						<a href={`/projects/${first.id}/`} rel="bookmark" aria-label={first.data.title}>
+							<div class="featured-img" style={imgVars(first.id)} />
+						</a>
+					</li>
+				</ul>
+			)
+		}
+		<ul class="cols recent">
+			{
+				rest.map((p) => (
+					<li class={colorClass(p.data.color)} data-project={p.id} data-color={p.data.color}>
+						<article>
+							<a href={`/projects/${p.id}/`} rel="bookmark">
+								<div class="featured-img" style={imgVars(p.id)} />
+								<h2 class="entry-title">{p.data.title}</h2>
+							</a>
+							<a href="/projects/" class="category">Project</a>
+							<p class="index-summary">{p.data.description}</p>
+							<time class="published" datetime={p.data.date.toISOString()}>{monthYear(p.data.date)}</time>
+							<Swatches id={p.id} />
+						</article>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+</Base>

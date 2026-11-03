@@ -1,0 +1,25 @@
+---
+import Base from '../../layouts/Base.astro'
+import { getProjects } from '../../lib/projects'
+import { colorClass, longDate } from '../../lib/colors'
+
+const projects = await getProjects()
+---
+
+<Base title="Projects">
+	<section id="content">
+		<h1>Archive</h1>
+		<ul id="archive">
+			{
+				projects.map((p) => (
+					<li class={colorClass(p.data.color)} data-project={p.id} data-color={p.data.color}>
+						<a class="archive-link" href={`/projects/${p.id}/`}>
+							<time datetime={p.data.date.toISOString()}>{longDate(p.data.date)}</time>
+							<span class="entry-title">{p.data.title}</span>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+</Base>

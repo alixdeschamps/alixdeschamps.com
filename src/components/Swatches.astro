@@ -1,0 +1,56 @@
+---
+// Pastilles pour changer la couleur d'un projet. Le choix est gardé dans le navigateur du visiteur ;
+// sans choix, le projet garde la couleur de son frontmatter.
+import { CLASSES, SHOW_SWATCHES } from '../lib/colors'
+
+interface Props {
+	id: string
+}
+const { id } = Astro.props
+---
+
+{
+	SHOW_SWATCHES && (
+		<div class="swatches" data-swatches={id}>
+			{Object.entries(CLASSES).map(([color, cls]) => (
+				<button type="button" class={`swatch swatch-${cls}`} data-swatch={color} aria-label={color} aria-pressed="false" />
+			))}
+		</div>
+	)
+}
+
+<script>
+	import { CLASSES, COLORS_KEY, type Color } from '../lib/colors'
+	import { read, save } from '../lib/prefs'
+
+	function readColors(): Record<string, Color> {
+		try {
+			return JSON.parse(read(COLORS_KEY) ?? '{}')
+		} catch {
+			return {}
+		}
+	}
+
+	document.querySelectorAll<HTMLElement>('[data-swatches]').forEach((group) => {
+		const id = group.dataset.swatches!
+		const target = document.querySelector<HTMLElement>(`[data-project="${id}"]`)
+		if (!target) return
+
+		const buttons = group.querySelectorAll<HTMLButtonElement>('[data-swatch]')
+		const sync = () => buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.swatch === target.dataset.color)))
+		sync()
+
+		buttons.forEach((button) =>
+			button.addEventListener('click', () => {
+				const color = button.dataset.swatch as Color
+				Object.values(CLASSES).forEach((cls) => target.classList.remove(cls))
+				target.classList.add(CLASSES[color])
+				target.dataset.color = color
+				const colors = readColors()
+				colors[id] = color
+				save(COLORS_KEY, JSON.stringify(colors))
+				sync()
+			}),
+		)
+	})
+</script>

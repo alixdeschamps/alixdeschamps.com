@@ -1,0 +1,113 @@
+---
+// Réglages d'affichage : bande bleu ciel et presets de couleurs
+// (les presets de panr.github.io/terminal-css, comme sur les autres thèmes).
+import presets from '../data/presets.json'
+import { HEADER_COLORS } from '../lib/prefs'
+
+type Preset = { background: string; foreground: string; accent: string }
+
+// Même règle que terminal-css pour classer les presets en « Dark » ou « Light ».
+function isDark(color: string) {
+	const rgb = parseInt(color.substring(1), 16)
+	const r = (rgb >> 16) & 0xff
+	const g = (rgb >> 8) & 0xff
+	const b = rgb & 0xff
+	return 0.2126 * r + 0.7152 * g + 0.0722 * b < 55
+}
+
+const entries = Object.entries(presets as Record<string, Preset>)
+const groups = {
+	Dark: entries.filter(([, p]) => isDark(p.background)),
+	Light: entries.filter(([, p]) => !isDark(p.background)),
+}
+---
+
+<div class="prefs">
+	<div>
+		<span>Band</span>
+		<button type="button" id="sky-toggle" aria-pressed="true">on</button>
+	</div>
+	<div>
+		<label for="preset-picker">Theme</label>
+		<select id="preset-picker">
+			<option value="">Solar</option>
+			{
+				Object.entries(groups).map(([group, items]) => (
+					<optgroup label={group}>
+						{items.map(([name]) => (
+							<option value={name}>{name}</option>
+						))}
+					</optgroup>
+				))
+			}
+		</select>
+	</div>
+	<div>
+		<label for="header-color-picker">Header</label>
+		<select id="header-color-picker">
+			<option value="">Solar default</option>
+			{
+				Object.entries(HEADER_COLORS).map(([name, color]) => (
+					<option value={name}>{color}</option>
+				))
+			}
+		</select>
+	</div>
+</div>
+
+<script>
+	import presets from '../data/presets.json'
+	import {
+		applyHeaderColor,
+		applyPreset,
+		applySky,
+		read,
+		save,
+		HEADER_COLOR_KEY,
+		PRESET_KEY,
+		SKY_KEY,
+		type Preset,
+	} from '../lib/prefs'
+
+	// Bouton à deux états : l'état est porté par un attribut de <html>, posé aussi par le script du <head>.
+	function setupToggle(id: string, isOn: () => boolean, labels: [string, string], onChange: (on: boolean) => void) {
+		const button = document.getElementById(id)
+		if (!button) return
+		const sync = () => {
+			button.setAttribute('aria-pressed', String(isOn()))
+			button.textContent = isOn() ? labels[0] : labels[1]
+		}
+		sync()
+		button.addEventListener('click', () => {
+			onChange(!isOn())
+			sync()
+		})
+	}
+
+	const root = document.documentElement
+	setupToggle('sky-toggle', () => root.getAttribute('data-sky') !== 'off', ['on', 'off'], (on) => {
+		applySky(on)
+		save(SKY_KEY, on ? null : 'off')
+	})
+
+	const select = document.getElementById('preset-picker') as HTMLSelectElement | null
+	if (select) {
+		select.value = read(PRESET_KEY) ?? ''
+		select.addEventListener('change', () => {
+			const name = select.value
+			applyPreset(name ? (presets as Record<string, Preset>)[name] : null)
+			save(PRESET_KEY, name || null)
+		})
+	}
+
+	const headerColorSelect = document.getElementById('header-color-picker') as HTMLSelectElement | null
+	if (headerColorSelect) {
+		headerColorSelect.value = read(HEADER_COLOR_KEY) ?? ''
+		applyHeaderColor(headerColorSelect.value || null)
+		headerColorSelect.addEventListener('change', () => {
+			const name = headerColorSelect.value
+			applyHeaderColor(name || null)
+			save(HEADER_COLOR_KEY, name || null)
+		})
+	}
+</script>

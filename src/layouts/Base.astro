@@ -1,0 +1,93 @@
+---
+import '../styles/style.scss'
+import { CLASSES, COLORS_KEY, SHOW_SWATCHES } from '../lib/colors'
+
+interface Props {
+	title?: string
+	description?: string
+	bodyClass?: string
+	// Page d'un projet : son identifiant et sa couleur, pour appliquer la couleur choisie par le visiteur.
+	project?: string
+	color?: string
+}
+
+const SITENAME = 'Alix Deschamps'
+const { title, description = 'Inventions, prototypes et projets.', bodyClass, project, color } = Astro.props
+---
+
+<!doctype html>
+<html lang="fr" data-header-color="paleSage">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title ? `${title} | ${SITENAME}` : SITENAME}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+		<link rel="preload" href="/fonts/Luciole-Regular.woff2" as="font" type="font/woff2" crossorigin />
+	</head>
+	<body class={bodyClass} data-project={project} data-color={color}>
+		<main>
+			<header class="top">
+				<h1><a href="/">{SITENAME}</a></h1>
+				<nav id="menu">
+					<div id="menu-s">menu</div>
+					<ul id="menu-list">
+						<li><a href="/">Home</a></li>
+						<li class="low"><a class="category" href="/projects/">Inventions</a></li>
+					</ul>
+				</nav>
+			</header>
+
+			<slot />
+
+			<footer id="content-info" class="body">
+				<h2><a href="/">{SITENAME}</a></h2>
+				<div class="dashboard">
+					<ul class="cols">
+						<li>
+							<h3>Info</h3>
+							<p>
+								Typeface: <a href="https://www.luciole-vision.com/">Luciole</a>
+							</p>
+							<p>
+								Theme <a href="https://github.com/lowtechmag/solar">Solar</a>,
+								inspiré du <a href="https://solar.lowtechmagazine.com">Low-tech Magazine</a>.
+							</p>
+						</li>
+						<li>
+							<h3>Contact</h3>
+							<p>&copy; Alix Deschamps</p>
+						</li>
+					</ul>
+				</div>
+			</footer>
+		</main>
+
+		{
+			SHOW_SWATCHES && (
+				<>
+					<!-- Couleurs de projet choisies par le visiteur, appliquées dès que la page est lue. -->
+					<script is:inline define:vars={{ classes: CLASSES, key: COLORS_KEY }}>
+						try {
+							var saved = JSON.parse(localStorage.getItem(key) || '{}')
+							document.querySelectorAll('[data-project]').forEach(function (el) {
+								var c = saved[el.dataset.project]
+								if (!classes[c]) return
+								for (var k in classes) el.classList.remove(classes[k])
+								el.classList.add(classes[c])
+								el.dataset.color = c
+							})
+						} catch (e) {}
+					</script>
+				</>
+			)
+		}
+
+		<script>
+			// Menu mobile, repris du thème d'origine.
+			document.getElementById('menu-s')?.addEventListener('click', () => {
+				document.getElementById('menu-list')?.classList.toggle('show')
+			})
+		</script>
+	</body>
+</html>
